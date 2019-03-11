@@ -1,7 +1,6 @@
 package toomuchnoise;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +10,7 @@ import static misc.Misc.fastCompareOffset;
 
 public class Solution {
 
-    static boolean debug = true; //to display time taken on each function
+    static boolean debug = false; //to display time taken on each function
     private final Scanner scanner = new Scanner(System.in);
 
     private String[] readInput() {
@@ -34,9 +33,9 @@ public class Solution {
             t.add(s.toCharArray());
             sortedWords.put(s.charAt(0), t);
         }
-        for (Character c : sortedWords.keySet()) {
-            sortedWords.get(c).sort(Comparator.comparingInt(x -> x.length));
-            Collections.reverse(sortedWords.get(c));
+        for (Character c : sortedWords.keySet()) { 
+            Comparator<char[]> cc = Comparator.comparing(x -> x.length);
+            sortedWords.get(c).sort(cc.reversed() );
         }
         return sortedWords;
     }
