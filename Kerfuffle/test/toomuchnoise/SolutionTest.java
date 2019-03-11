@@ -72,6 +72,7 @@ public class SolutionTest {
 
     @Test
     public void testSample() {
+        System.out.println("Testing the example");
         //Arrange
         String input = "7";
         input += System.lineSeparator();
@@ -94,6 +95,7 @@ public class SolutionTest {
 
     @Test
     public void testLongestWordFirst() {
+        System.out.println("Testing longest word first");
         //Arrange
         String input = "5";
         input += System.lineSeparator();
@@ -116,6 +118,7 @@ public class SolutionTest {
 
     @Test
     public void testAdjacentWords() {
+        System.out.println("Testing adjacent words");
         //Arrange
         String input = "5";
         input += System.lineSeparator();
@@ -138,6 +141,7 @@ public class SolutionTest {
 
     @Test
     public void testUnexpectedResult() {
+        System.out.println("Testing unexpected result");
         //Arrange
         String input = "5";
         input += System.lineSeparator();
@@ -158,8 +162,10 @@ public class SolutionTest {
         assertNotEquals(expResult, result);
     }
 
+//    @Ignore
     @Test
     public void testCase1() {
+        System.out.println("Solving test #1");
         //Arrange               
         String[] in = loadInput("1");
         String input = in[0];
@@ -178,6 +184,7 @@ public class SolutionTest {
 
     @Test
     public void testCase2() {
+        System.out.println("Solving test #2");
         //Arrange           
         String[] in = loadInput("2");
         String input = in[0];
@@ -194,8 +201,10 @@ public class SolutionTest {
         assertEquals(expResult, result);
     }
 
+//    @Ignore
     @Test
     public void testCase3() {
+        System.out.println("Solving test #3");
         //Arrange
         String[] in = loadInput("3");
         String input = in[0];
@@ -214,6 +223,7 @@ public class SolutionTest {
 
     @Test
     public void testCase4() {
+        System.out.println("Solving test #4");
         //Arrange        
         String[] in = loadInput("4");
         String input = in[0];
