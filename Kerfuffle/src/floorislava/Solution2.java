@@ -19,8 +19,10 @@ public class Solution2 {
     private final boolean debug = false;
 
     private final double MAX_HOP_DISTANCE = 1.0d;
-    final private int MAX_HOPS = 143;
+    final private int MAX_HOPS = 261;
     private final boolean ROUND_DECIMALS = true;
+
+    private final boolean OPTIMIZATION_MOVE_UP_ONLY = true;
 
     public Solution2() {
         df.setRoundingMode(RoundingMode.DOWN);
@@ -37,7 +39,7 @@ public class Solution2 {
     }
 
     private double generateR(double r) {
-        double v = (1664525d * r + 1013904223d) % 4294967296d;        
+        double v = (1664525d * r + 1013904223d) % 4294967296d;
         return ROUND_DECIMALS ? Double.parseDouble(df.format(v)) : v;
     }
 
@@ -74,33 +76,41 @@ public class Solution2 {
 
     private int findShortestPath(Node n, int i, int l, List<Node> nodesToIgnore) {
         if (debug) {
-            System.out.println("===Finding shortest path from node");
+            System.out.println("===Finding shortest path from node " + n.id);
             n.print();
         }
         if (l - n.y <= MAX_HOP_DISTANCE) { //can it reach the other side?
+            if (debug) {
+                System.out.println("Reached the other side in " + (i + 1) + " hops.");
+            }
             return i + 1;
         }
 
-        if (i > shortestPathFound || i > MAX_HOPS) {
+        if (i >= shortestPathFound || i >= MAX_HOPS) {
             return Integer.MAX_VALUE;
         }
 
-//        for(Node ni: nodesToIgnore){
-//            if(ni.id == n.id)
-//                return Integer.MAX_VALUE;
-//        }
         int min = Integer.MAX_VALUE;
         for (Node ni : n.nodes) {
 
             if (nodesToIgnore.contains(ni)) {
                 continue;
             }
+            if (OPTIMIZATION_MOVE_UP_ONLY && ni.y < n.y) { //Search only nodes that are closer to the other edge
+                continue;
+            }
             nodesToIgnore.add(ni);
+            if (debug) {
+                System.out.println("From node " + n.id + " to node " + ni.id);
+            }
             min = findShortestPath(ni, i + 1, l, nodesToIgnore);
             if (min < shortestPathFound) {
                 shortestPathFound = min;
             }
             nodesToIgnore.remove(ni);
+        }
+        if (debug) {
+            System.out.println("Returning from node " + n.id + ". Distance found: " + min);
         }
         return min;
 
@@ -151,17 +161,17 @@ public class Solution2 {
             node.x = postsCoords[i];
             node.y = postsCoords[i + 1];
 
-            
             Iterator<Node> it = allNodes.iterator();
             while (it.hasNext()) {
                 Node n = it.next();
 //            for (int ii=0; ii< allNodes.size(); ii++) {
                 if (calculateDistanceBetweenPoints(n.x, n.y, node.x, node.y) <= MAX_HOP_DISTANCE) {
                     boolean b2 = node.nodes.add(n);
-                    boolean b1 = n.nodes.add(node); 
-                    
-                    if(!b1 || !b2)
-                        System.err.println("ALSKDFJLASDJFLKASFJKLSDF");
+                    boolean b1 = n.nodes.add(node);
+
+                    if (!b1 || !b2) {
+                        System.err.println("COULD NOT INSERT NODE!");
+                    }
                 }
             }
             allNodes.add(node);
@@ -191,32 +201,21 @@ class Node implements Comparable<Node> {
     public int id;
     public double x, y;
     public TreeSet<Node> nodes = new TreeSet<>();
-            
-//            new TreeSet<>(new Comparator<Node>() {
-//        @Override
-//        public int compare(Node o1, Node o2) {
-//            Node n1 = (Node)o1;
-//            Node n2 = (Node)o2;
-//            return (int)(n1.y-n2.y);
-//        }
-//    });
 
     @Override
     public int compareTo(Node o) {
-//        return this.id - o.id;
+        if (this.y == o.y) {
+            return 0;
+        }
 
-
-        if (this.y == o.y ) return 0;
-
-        return this.y - o.y < 0d? -1 : +1;       
+        return this.y - o.y < 0d ? 1 : -1;
     }
 
-    
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 67 * hash + this.id;
-        return hash;
+//        int hash = 7;
+//        hash = 67 * hash + this.id;
+        return id;
     }
 
     @Override
@@ -233,18 +232,16 @@ class Node implements Comparable<Node> {
         final Node other = (Node) obj;
         return this.id == other.id;
     }
-    
-   
-    public boolean equals(Node o){
-        Node n = (Node)o;
+
+    public boolean equals(Node o) {
+        Node n = (Node) o;
         return this.id == n.id;
     }
-    
-   
+
     public void print() {
-        System.out.println(id +"(" + x + "," + y + ")");
+        System.out.println(id + "(" + x + "," + y + ")");
         for (Node n : nodes) {
-            System.out.println("    "+n.id+"(" + n.x + "," + n.y + ")");
+            System.out.println("    " + n.id + "(" + n.x + "," + n.y + ")");
         }
     }
 

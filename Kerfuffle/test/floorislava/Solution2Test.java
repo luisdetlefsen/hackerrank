@@ -151,5 +151,22 @@ public class Solution2Test {
         assertEquals(expResult, result);
     }
     
+    @Test
+    public void testCase5() {
+        System.out.println("Solving test #5");
+        //Arrange           
+        String in = "170 170 5 50000";
+        System.setIn(new ByteArrayInputStream(in.getBytes()));
+
+        int expResult = 261;
+        instance = new Solution2();
+
+        //Act
+        int result = instance.solve();
+
+        //Assert
+        assertEquals(expResult, result);
+    }
+    
     
 }
