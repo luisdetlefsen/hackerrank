@@ -20,12 +20,11 @@ import org.junit.runners.MethodSorters;
  * @author luisdetlefsen
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class SolutionTest {
-
+public class Solution2Test {
     
-    Solution instance ;
+     Solution2 instance ;
     
-    public SolutionTest() {
+    public Solution2Test() {
     }
 
     @BeforeClass
@@ -53,7 +52,7 @@ public class SolutionTest {
         System.setIn(new ByteArrayInputStream(in.getBytes()));
 
         int expResult = 6;
-        instance = new Solution();
+        instance = new Solution2();
 
         //Act
         int result = instance.solve();
@@ -71,7 +70,7 @@ public class SolutionTest {
         System.setIn(new ByteArrayInputStream(in.getBytes()));
 
         int expResult = 4;
-        instance = new Solution();
+        instance = new Solution2();
 
         //Act
         int result = instance.solve();
@@ -89,7 +88,7 @@ public class SolutionTest {
         System.setIn(new ByteArrayInputStream(in.getBytes()));
 
         int expResult = 14;
-        instance = new Solution();
+        instance = new Solution2();
 
         //Act
         int result = instance.solve();
@@ -107,7 +106,7 @@ public class SolutionTest {
         System.setIn(new ByteArrayInputStream(in.getBytes()));
 
         int expResult = 89;
-        instance = new Solution();
+        instance = new Solution2();
 
         //Act
         int result = instance.solve();
@@ -125,7 +124,7 @@ public class SolutionTest {
         System.setIn(new ByteArrayInputStream(in.getBytes()));
 
         int expResult = 142;
-        instance = new Solution();
+        instance = new Solution2();
 
         //Act
         int result = instance.solve();
@@ -143,7 +142,7 @@ public class SolutionTest {
         System.setIn(new ByteArrayInputStream(in.getBytes()));
 
         int expResult = -1;
-        instance = new Solution();
+        instance = new Solution2();
 
         //Act
         int result = instance.solve();
@@ -153,7 +152,4 @@ public class SolutionTest {
     }
     
     
-    
-    
-
 }

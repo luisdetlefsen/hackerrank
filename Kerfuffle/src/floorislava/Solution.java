@@ -17,7 +17,7 @@ public class Solution {
     private final DecimalFormat df = new DecimalFormat("#.#####");
 
     private final double MAX_HOP_DISTANCE = 1d;
-    private int MAX_HOPS = 5;
+    final private int MAX_HOPS = 14;
 
     public Solution() {
         df.setRoundingMode(RoundingMode.DOWN);
@@ -94,14 +94,29 @@ public class Solution {
         return sectors;
     }
 
-    private List<double[]> getClosestCoords(TreeMap<Integer, TreeMap<Integer, List<double[]>>> allSectors, double x, double y) {
+    private List<double[]> getClosestCoords(TreeMap<Integer, TreeMap<Integer, List<double[]>>> allSectors, double x, double y, List<double[]> ancestorsToIgnore) {
         List<double[]> r = new ArrayList<>();
         {
             TreeMap<Integer, List<double[]>> yy = allSectors.get((int) (x - 1));
             if (yy != null) {
                 List<double[]> rr = yy.get((int) y);
                 if (rr != null) {
-                    r.addAll(rr);
+                    for (int i = 0; i < rr.size(); i++) {
+                        double x_ = rr.get(i)[0], y_ = rr.get(i)[1];
+
+                        boolean ignore = false;
+                        for (int j = 0; j < ancestorsToIgnore.size(); j++) {
+                            if (ancestorsToIgnore.get(j)[0] == x_ && ancestorsToIgnore.get(j)[1] == y_) {
+                                ignore = true;
+                                break;
+                            }
+                        }
+                        if (!ignore) {
+                            r.add(rr.get(i));
+                        }
+
+                    }
+                    // r.addAll(rr);
                 }
             }
         }
@@ -111,7 +126,21 @@ public class Solution {
             if (yy != null) {
                 List<double[]> rr = yy.get((int) (y + 1));
                 if (rr != null) {
-                    r.addAll(rr);
+                    for (int i = 0; i < rr.size(); i++) {
+                        double x_ = rr.get(i)[0], y_ = rr.get(i)[1];
+
+                        boolean ignore = false;
+                        for (int j = 0; j < ancestorsToIgnore.size(); j++) {
+                            if (ancestorsToIgnore.get(j)[0] == x_ && ancestorsToIgnore.get(j)[1] == y_) {
+                                ignore = true;
+                                break;
+                            }
+                        }
+                        if (!ignore) {
+                            r.add(rr.get(i));
+                        }
+                    }
+                    // r.addAll(rr);
                 }
             }
         }
@@ -121,7 +150,21 @@ public class Solution {
             if (yy != null) {
                 List<double[]> rr = yy.get((int) (y + 1));
                 if (rr != null) {
-                    r.addAll(rr);
+                    for (int i = 0; i < rr.size(); i++) {
+                        double x_ = rr.get(i)[0], y_ = rr.get(i)[1];
+
+                        boolean ignore = false;
+                        for (int j = 0; j < ancestorsToIgnore.size(); j++) {
+                            if (ancestorsToIgnore.get(j)[0] == x_ && ancestorsToIgnore.get(j)[1] == y_) {
+                                ignore = true;
+                                break;
+                            }
+                        }
+                        if (!ignore) {
+                            r.add(rr.get(i));
+                        }
+                    }
+                    // r.addAll(rr);
                 }
             }
         }
@@ -131,31 +174,56 @@ public class Solution {
             if (yy != null) {
                 List<double[]> rr = yy.get((int) (y + 1));
                 if (rr != null) {
-                    r.addAll(rr);
+                    for (int i = 0; i < rr.size(); i++) {
+                        double x_ = rr.get(i)[0], y_ = rr.get(i)[1];
+
+                        boolean ignore = false;
+                        for (int j = 0; j < ancestorsToIgnore.size(); j++) {
+                            if (ancestorsToIgnore.get(j)[0] == x_ && ancestorsToIgnore.get(j)[1] == y_) {
+                                ignore = true;
+                                break;
+                            }
+                        }
+                        if (!ignore) {
+                            r.add(rr.get(i));
+                        }
+                    }
+                    // r.addAll(rr);
                 }
             }
         }
         {
-            TreeMap<Integer, List<double[]>> yy = allSectors.get((int) (x + 1));
-            if (yy != null) {
-                List<double[]> rr = yy.get((int) (y));
-                if (rr != null) {
-                    r.addAll(rr);
-                }
-            }
+//            TreeMap<Integer, List<double[]>> yy = allSectors.get((int) (x + 1));
+//            if (yy != null) {
+//                List<double[]> rr = yy.get((int) (y));
+//                if (rr != null) {
+//                    for (int i = 0; i < rr.size(); i++) {
+//                        double x_ = rr.get(i)[0], y_ = rr.get(i)[1];
+//
+//                        boolean ignore = false;
+//                        for (int j = 0; j < ancestorsToIgnore.size(); j++) {
+//                            if (ancestorsToIgnore.get(j)[0] == x_ && ancestorsToIgnore.get(j)[1] == y_) {
+//                                ignore = true;
+//                                break;
+//                            }
+//                        }
+//                        if (!ignore) {
+//                            r.add(rr.get(i));
+//                        }
+//                    }
+//                    // r.addAll(rr);
+//                }
+//            }
         }
 
         return r;
     }
 
-    private int findShortestPath(TreeMap<Integer, TreeMap<Integer, List<double[]>>> allSectors, double x, double y, int i, double l) {
+    private int findShortestPath(TreeMap<Integer, TreeMap<Integer, List<double[]>>> allSectors, double x, double y, int i, double l, List<double[]> ancestorsToIgnore) {
 //        System.out.println("Finding shortest path for: " + x + ", " + y+ " | current jumps: " + i);
-        List<double[]> neighbours = getClosestCoords(allSectors, x, y);//allSectors.get(x).get(y);
+        List<double[]> neighbours = getClosestCoords(allSectors, x, y, ancestorsToIgnore);//allSectors.get(x).get(y);
 
         if (l - y <= MAX_HOP_DISTANCE) { //can it reach the other side?
-//            if((i+1)==5 )
-//                System.out.println("###################");
-//            System.out.println("Reached the other side with jumps: " + (i+1));
             return i + 1;
         }
 
@@ -168,7 +236,9 @@ public class Solution {
         for (int j = 0; j < neighbours.size(); j++) {
             double[] coord = neighbours.get(j);
             if (calculateDistanceBetweenPoints(x, y, coord[0], coord[1]) <= MAX_HOP_DISTANCE) {
-                int hops = findShortestPath(allSectors, coord[0], coord[1], i + 1, l);
+//                ancestorsToIgnore.add(new double[]{coord[0], coord[1]});
+                int hops = findShortestPath(allSectors, coord[0], coord[1], i + 1, l, ancestorsToIgnore);
+//                removeFromAncestor(coord[0], coord[1],ancestorsToIgnore);
                 if (hops < min) {
 //                    System.out.println("New min found: " + hops);
                     min = hops;
@@ -176,6 +246,15 @@ public class Solution {
             }
         }
         return min;
+    }
+    
+    public void removeFromAncestor(double x, double y, List<double[]> ancestorsToIgnore){
+        for (int i = 0; i < ancestorsToIgnore.size(); i++) {
+            if(ancestorsToIgnore.get(i)[0]==x && ancestorsToIgnore.get(i)[1] ==y){
+                ancestorsToIgnore.remove(i);
+                return;
+            }
+        }
     }
 
     public double calculateDistanceBetweenPoints(
@@ -196,22 +275,21 @@ public class Solution {
         double[] postCoords = generatePostCoordinates(w, l, s, c);
 
         TreeMap<Integer, TreeMap<Integer, List<double[]>>> allSectors = convertPostCoordsToSectors(postCoords);
-        MAX_HOPS = c/2;
+//        MAX_HOPS = c / 3;
         List<double[]> postsNearEdge = new ArrayList<>();
         for (int i = 0; i < postCoords.length; i += 2) {
             if (postCoords[i + 1] <= MAX_HOP_DISTANCE) {
                 postsNearEdge.add(new double[]{postCoords[i], postCoords[i + 1]});
             }
         }
-//        for (int i = 0; i < w ; i++) {
-//            postsNearEdge.addAll(getClosestCoords(allSectors, i, 0d));
-//        }
 
         int d = Integer.MAX_VALUE;
 
+        List<double[]> ancestorsToIgnore = new ArrayList<>();
         for (int i = 0; i < postsNearEdge.size(); i++) {
-            int ii = 1;
-            ii = findShortestPath(allSectors, postsNearEdge.get(i)[0], postsNearEdge.get(i)[1], ii, l);
+            int ii = 1;            
+            ancestorsToIgnore.add(new double[]{postsNearEdge.get(i)[0], postsNearEdge.get(i)[1]});
+            ii = findShortestPath(allSectors, postsNearEdge.get(i)[0], postsNearEdge.get(i)[1], ii, l, ancestorsToIgnore);
             d = Math.min(d, ii);
         }
         if (d == Integer.MAX_VALUE) {
