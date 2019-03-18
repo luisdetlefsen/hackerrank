@@ -3,6 +3,7 @@ package floorislava;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
@@ -13,19 +14,26 @@ import java.util.TreeSet;
  * @author luisdetlefsen
  */
 public class Solution2 {
-
+//0.067s, 0.02s   || 0.017
     private Scanner scanner = new Scanner(System.in);
-    private final DecimalFormat df = new DecimalFormat("#.##########");
+    private final DecimalFormat df = new DecimalFormat("#.####");
     private final boolean debug = false;
 
     private final double MAX_HOP_DISTANCE = 1.0d;
-    final private int MAX_HOPS = 261;
-    private final boolean ROUND_DECIMALS = true;
+    private final int MAX_HOPS = 262;
+    private final boolean ROUND_DECIMALS = false;
+    private final boolean ROUND_EXPERIMENTAL = true; //it is more accurate
 
-    private final boolean OPTIMIZATION_MOVE_UP_ONLY = true;
+    private final boolean OPTIMIZATION_MOVE_UP_ONLY = false; //doesn't work in all cases
+    private final boolean OPTIMIZATION_USE_MAGIC = false; //magic is not real
+    private final boolean OPTIMIZATION_REMEMBER_PATHS_VISITED = true;
+    int shortestPathFound = Integer.MAX_VALUE;
+
+//    long t1 = w* 100_000_000_000_000l+ i * 10_000_000l + i2;
+    private final HashSet<Long> pathsTraveled = new HashSet<>();
 
     public Solution2() {
-        df.setRoundingMode(RoundingMode.DOWN);
+        df.setRoundingMode(RoundingMode.HALF_UP);
     }
 
     private Integer[] readInput() {
@@ -40,15 +48,23 @@ public class Solution2 {
 
     private double generateR(double r) {
         double v = (1664525d * r + 1013904223d) % 4294967296d;
+
+        if (ROUND_EXPERIMENTAL) {
+            return Math.round(v * 10000.0) / 10000.0;
+        }
         return ROUND_DECIMALS ? Double.parseDouble(df.format(v)) : v;
     }
 
     private double generateOut(double r) {
         double v = r / 4294967296d;
+
+        if (ROUND_EXPERIMENTAL) {
+            return Math.round(v * 10000.0) / 10000.0;
+        }
         return ROUND_DECIMALS ? Double.parseDouble(df.format(v)) : v;
     }
 
-    private double[] generatePostCoordinates(double w, double l, double s, int c) {
+    public double[] generatePostCoordinates(double w, double l, double s, int c) {
         double[] r = new double[c * 2];
         double ri = s;
         double oi;
@@ -63,22 +79,15 @@ public class Solution2 {
             }
         }
 
-//        for (int i = 0; i < r.length; i+=2) {
-//            
-//            System.out.print(r[i]+", "+r[i+1]);
-//            System.out.println("");
-//        }
-//        r = new double[]{0.7094, 1.4772,1.5127, 2.8195,0.1516, 1.4781,2.3243, 2.2248,0.0495, 2.5570,0.7514, 1.6895,1.7721, 3.3477,0.7052, 3.9234,2.5827, 1.3075,2.0478, 2.1258,0.6478, 0.4181,0.2116, 1.2755,0.3894, 2.8290,1.7487, 1.5172,0.7888, 3.0036,2.7921, 0.7091};
         return r;
     }
 
-    int shortestPathFound = Integer.MAX_VALUE;
-
-    private int findShortestPath(Node n, int i, int l, List<Node> nodesToIgnore) {
+    private int findShortestPath(final Node n, int i, int l, final HashSet<Integer> nodesToIgnore) {
         if (debug) {
             System.out.println("===Finding shortest path from node " + n.id);
             n.print();
         }
+        
         if (l - n.y <= MAX_HOP_DISTANCE) { //can it reach the other side?
             if (debug) {
                 System.out.println("Reached the other side in " + (i + 1) + " hops.");
@@ -92,22 +101,39 @@ public class Solution2 {
 
         int min = Integer.MAX_VALUE;
         for (Node ni : n.nodes) {
+            if (OPTIMIZATION_REMEMBER_PATHS_VISITED) {
+                Long pt = generatePathTraveled(n.id, ni.id, i + 1);
+                if (debug) {
+                    System.out.println("Traveled " + pt);
+                }
+                if (pathsTraveled.contains(pt)) {
+                    continue;
+                }
 
-            if (nodesToIgnore.contains(ni)) {
+                pathsTraveled.add(pt);
+            }
+
+            if (nodesToIgnore.contains(ni.id)) {
                 continue;
             }
+            
             if (OPTIMIZATION_MOVE_UP_ONLY && ni.y < n.y) { //Search only nodes that are closer to the other edge
                 continue;
             }
-            nodesToIgnore.add(ni);
+
+            if (OPTIMIZATION_USE_MAGIC && !ni.hasMagic()) {
+                continue;
+            }
+
+            nodesToIgnore.add(ni.id);
             if (debug) {
-                System.out.println("From node " + n.id + " to node " + ni.id);
+                System.out.println("Going from node " + n.id + " to node " + ni.id);
             }
             min = findShortestPath(ni, i + 1, l, nodesToIgnore);
             if (min < shortestPathFound) {
                 shortestPathFound = min;
             }
-            nodesToIgnore.remove(ni);
+            nodesToIgnore.remove(ni.id);
         }
         if (debug) {
             System.out.println("Returning from node " + n.id + ". Distance found: " + min);
@@ -125,15 +151,15 @@ public class Solution2 {
 
         double[] postCoords = generatePostCoordinates(w, l, s, c);
 
-        List<Node> startingNodes = convertPostCoordsToNodes(postCoords);
+        List<Node> startingNodes = convertPostCoordsToNodes(postCoords, l);
         if (debug) {
             System.out.println("Finding shortest path from starting nodes...");
         }
 
         for (Node n : startingNodes) {
             int hops = 1;
-            List<Node> nodesToIgnore = new ArrayList<>();
-            nodesToIgnore.add(n);
+            HashSet<Integer> nodesToIgnore = new HashSet<>();
+            nodesToIgnore.add(n.id);
             hops = findShortestPath(n, hops, (int) l, nodesToIgnore);
         }
         if (debug) {
@@ -147,12 +173,13 @@ public class Solution2 {
         return shortestPathFound;
     }
 
-    private List<Node> convertPostCoordsToNodes(double[] postsCoords) {
+    private List<Node> convertPostCoordsToNodes(double[] postsCoords, double l) {
         if (debug) {
             System.out.println("Converting post coords to nodes...");
         }
 
         List<Node> startingNodes = new ArrayList<>();
+        List<Node> endingNodes = new ArrayList<>(); //not used. Just to remind me that there are ending nodes
 
         List<Node> allNodes = new ArrayList<>();
         for (int i = 0, j = 0; i < postsCoords.length; i += 2, j++) {
@@ -161,16 +188,48 @@ public class Solution2 {
             node.x = postsCoords[i];
             node.y = postsCoords[i + 1];
 
+            if (l - node.y <= MAX_HOP_DISTANCE) {
+                if (debug) {
+                    System.out.println("Found magic in node " + node.id);
+                }
+                node.magic.isReal = true;
+            }
+
             Iterator<Node> it = allNodes.iterator();
+            boolean first = true;
             while (it.hasNext()) {
                 Node n = it.next();
-//            for (int ii=0; ii< allNodes.size(); ii++) {
                 if (calculateDistanceBetweenPoints(n.x, n.y, node.x, node.y) <= MAX_HOP_DISTANCE) {
                     boolean b2 = node.nodes.add(n);
                     boolean b1 = n.nodes.add(node);
 
-                    if (!b1 || !b2) {
-                        System.err.println("COULD NOT INSERT NODE!");
+                    if (OPTIMIZATION_USE_MAGIC && first) {
+                        first = false;
+                        node.magic = n.magic;
+                        if (l - node.y <= MAX_HOP_DISTANCE) {
+                            node.magic.isReal = true;
+                            for (Node nn : n.nodes) {
+                                nn.magic.isReal = true;
+                            }
+                        }
+
+                    }
+
+                    if (debug && (!b1 || !b2)) {
+                        if (!b1) { //There is already a node with the same coordinates. It happens.
+                            System.err.println("Could not add node " + node.id + " to node " + n.id);
+                        } else {
+                            System.err.println("Could not add node " + n.id + " to node " + node.id);
+                        }
+
+                        if (debug) {
+                            n.print();
+                            node.print();
+                        }
+                        
+
+//                        throw new RuntimeException("Could not insert node");
+//                        System.err.println("COULD NOT INSERT NODE!");
                     }
                 }
             }
@@ -183,6 +242,22 @@ public class Solution2 {
         if (debug) {
             System.out.println("Completed");
         }
+
+        if (OPTIMIZATION_USE_MAGIC) {
+            for (int i = 0; i < allNodes.size(); i++) {
+                for (Node n : allNodes) {
+
+                    if (!n.magic.isReal) {
+                        n.magic.isReal = n.hasMagic();
+                    }
+                    if (debug) {
+                        n.print();
+                    }
+                }
+            }
+        }
+
+        System.out.println("=============");
         return startingNodes;
     }
 
@@ -194,6 +269,10 @@ public class Solution2 {
         return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
     }
 
+    private Long generatePathTraveled(int id1, int id2, int w) {
+        return w * 100_000_000_000_000l + id1 * 10_000_000l + id2;
+    }
+
 }
 
 class Node implements Comparable<Node> {
@@ -201,10 +280,23 @@ class Node implements Comparable<Node> {
     public int id;
     public double x, y;
     public TreeSet<Node> nodes = new TreeSet<>();
+    public Magic magic = new Magic();
+
+    public boolean hasMagic() {
+        if (magic.isReal) {
+            return true;
+        }
+        for (Node n : nodes) {
+            if (n.magic.isReal) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     public int compareTo(Node o) {
-        if (this.y == o.y) {
+        if (this.y == o.y && this.x == o.x) {
             return 0;
         }
 
@@ -239,10 +331,15 @@ class Node implements Comparable<Node> {
     }
 
     public void print() {
-        System.out.println(id + "(" + x + "," + y + ")");
+        System.out.println(id + "(" + x + "," + y + ")" + (hasMagic()));
         for (Node n : nodes) {
-            System.out.println("    " + n.id + "(" + n.x + "," + n.y + ")");
+            System.out.println("    " + n.id + "(" + n.x + "," + n.y + ")" + n.hasMagic());
         }
     }
 
+}
+
+class Magic {
+
+    public boolean isReal = false;
 }

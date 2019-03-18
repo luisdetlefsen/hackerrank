@@ -6,6 +6,7 @@
 package floorislava;
 
 import java.io.ByteArrayInputStream;
+import java.util.Arrays;
 import static junit.framework.Assert.assertEquals;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -166,6 +167,24 @@ public class Solution2Test {
 
         //Assert
         assertEquals(expResult, result);
+    }
+    
+    @Test
+    public void testCoordGeneration(){
+        System.out.println("Testing coord generation");
+        instance = new Solution2();
+        double[] expectedResult =  new double[]{0.7094, 1.4772,1.5127, 2.8195,0.1516, 1.4781,2.3243, 2.2248,0.0495, 2.5570,0.7514, 1.6895,1.7721, 3.3477,0.7052, 3.9234,2.5827, 1.3075,2.0478, 2.1258,0.6478, 0.4181,0.2116, 1.2755,0.3894, 2.8290,1.7487, 1.5172,0.7888, 3.0036,2.7921, 0.7091};
+        
+        
+        double[] result = instance.generatePostCoordinates(3d, 4d, 1d, 16);
+        
+        
+        for (int i = 0; i < result.length; i++) {
+            System.out.println(result[i] + " should be " + expectedResult[i] + " ### diff: " + (result[i] - expectedResult[i] ));
+        }
+        
+        assert(Arrays.equals(expectedResult, result));
+        
     }
     
     
