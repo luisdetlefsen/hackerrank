@@ -13,6 +13,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
@@ -169,6 +170,7 @@ public class Solution2Test {
         assertEquals(expResult, result);
     }
     
+    @Ignore
     @Test
     public void testCoordGeneration(){
         System.out.println("Testing coord generation");

@@ -22,10 +22,10 @@ public class Solution2 {
     private Scanner scanner = new Scanner(System.in);
     private final DecimalFormat df = new DecimalFormat("#.####");
     private final boolean debug = false;
-    private final boolean printPerformance = true;
+    private final boolean printPerformance = false;
 
     private final double MAX_HOP_DISTANCE = 1.0d;
-    private final int MAX_HOPS = 262;
+    private int MAX_HOPS = 0;
     private final boolean ROUND_DECIMALS = false;
     private final boolean ROUND_EXPERIMENTAL = true; //it is more accurate
 
@@ -33,9 +33,12 @@ public class Solution2 {
     private final boolean OPTIMIZATION_USE_MAGIC = false; //magic is not real
     private final boolean OPTIMIZATION_REMEMBER_PATHS_VISITED = true;
     int shortestPathFound = Integer.MAX_VALUE;
+    private final boolean PRINT_TOTAL_ITERATIONS = false;
 
-//    long t1 = w* 100_000_000_000_000l+ i * 10_000_000l + i2;
-    private final HashSet<Long> pathsTraveled = new HashSet<>();
+    private int totalIterations = 0;
+
+//    long t1 = i * 10_000_000l + i2;
+    private final Map<Long, Integer> pathsTraveledWeight = new HashMap<>();
 
     public Solution2() {
         df.setRoundingMode(RoundingMode.HALF_UP);
@@ -94,6 +97,7 @@ public class Solution2 {
     }
 
     private int findShortestPath(final Node n, int i, int l, final HashSet<Integer> nodesToIgnore) {
+        totalIterations++;
         if (debug) {
             System.out.println("===Finding shortest path from node " + n.id);
             n.print();
@@ -113,22 +117,29 @@ public class Solution2 {
         int min = Integer.MAX_VALUE;
         for (Node ni : n.nodes) {
             if (OPTIMIZATION_REMEMBER_PATHS_VISITED) {
-                Long pt = generatePathTraveled(n.id, ni.id, i + 1);
+                Long pt = generatePathTraveled(n.id, ni.id);
                 if (debug) {
                     System.out.println("Traveled " + pt);
                 }
-                if (pathsTraveled.contains(pt)) {
+                Integer ptw = pathsTraveledWeight.get(pt);
+                if (ptw != null && ptw <= i) {
                     continue;
                 }
 
-                pathsTraveled.add(pt);
+                if (ptw != null && ptw > i) {
+                    pathsTraveledWeight.replace(pt, i);
+                }
+
+                if (ptw == null) {
+                    pathsTraveledWeight.put(pt, i);
+                }
             }
 
             if (nodesToIgnore.contains(ni.id)) {
                 continue;
             }
 
-            if (OPTIMIZATION_MOVE_UP_ONLY && ni.y < n.y) { //Search only nodes that are closer to the other edge
+            if (OPTIMIZATION_MOVE_UP_ONLY && ni.y < n.y - 0.5d) { //Search only nodes that are closer to the other edge
                 continue;
             }
 
@@ -160,6 +171,10 @@ public class Solution2 {
         double s = in[2];
         int c = in[3];
 
+        MAX_HOPS = (int) Math.round(Math.sqrt(c)) + (int) Math.cbrt(c) + 15;
+//MAX_HOPS = 265;
+//        System.out.println("Max hops: " + MAX_HOPS);
+
         double[] postCoords = generatePostCoordinates(w, l, s, c);
 
         final List<Node> startingNodes = convertPostCoordsToNodes(postCoords, l);
@@ -187,6 +202,9 @@ public class Solution2 {
             shortestPathFound = -1;
         }
         System.out.println(shortestPathFound);
+        if (PRINT_TOTAL_ITERATIONS) {
+            System.out.println("Iterations: " + totalIterations);
+        }
         return shortestPathFound;
     }
 
@@ -255,7 +273,6 @@ public class Solution2 {
             System.out.println("Converted to sectors: " + stopCountingStr());
         }
 
-//        List<Node> allNodes = new ArrayList<>();
         Map<Integer, Node> allNodes = new HashMap<>();
         for (int i = 0, j = 0; i < postsCoords.length; i += 2, j++) {
             Node node = new Node();
@@ -274,7 +291,9 @@ public class Solution2 {
             List<Node> tmpNodes = new ArrayList<>();
             for (Integer nns : nodesNearSector) {
                 Node nns1 = allNodes.get(nns);
-                if(nns1==null)continue;
+                if (nns1 == null) {
+                    continue;
+                }
                 tmpNodes.add(allNodes.get(nns));
             }
 
@@ -349,8 +368,8 @@ public class Solution2 {
         return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
     }
 
-    private Long generatePathTraveled(int id1, int id2, int w) {
-        return w * 100_000_000_000_000l + id1 * 10_000_000l + id2;
+    private Long generatePathTraveled(int id1, int id2) {
+        return id1 * 10_000_000l + id2;
     }
 
 }
