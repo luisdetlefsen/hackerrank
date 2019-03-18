@@ -3,10 +3,13 @@ package floorislava;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import static misc.Performance.*;
 
@@ -187,6 +190,52 @@ public class Solution2 {
         return shortestPathFound;
     }
 
+    // Enter the X coordinate, then the Y coordinate, and get a List of node ids that are in that sector
+    private TreeMap<Integer, TreeMap<Integer, List<Integer>>> convertPostCoordsToSectors(double[] postsCoords) {
+        final TreeMap<Integer, TreeMap<Integer, List<Integer>>> sectors = new TreeMap<>();
+        //TODO: modify it so each sector can be of 0.5 or 0.2 of length
+        for (int i = 0, j = 0; i < postsCoords.length; i += 2, j++) {
+            double xi = postsCoords[i];
+            double yi = postsCoords[i + 1];
+            int xii = (int) xi;
+            int yii = (int) yi;
+
+            TreeMap<Integer, List<Integer>> yMap = sectors.get(xii);
+            if (yMap == null) {
+                yMap = new TreeMap();
+                sectors.put(xii, yMap);
+            }
+
+            List<Integer> sector = yMap.get(yii);
+            if (sector == null) {
+                sector = new ArrayList<>();
+                yMap.put(yii, sector);
+            }
+            sector.add(j); //add the id of the node. 
+        }
+        return sectors;
+    }
+
+    private List<Integer> getNodesInSector(final TreeMap<Integer, TreeMap<Integer, List<Integer>>> allSectors, double x, double y) {
+        int xx = (int) x;
+        int yy = (int) y;
+        List<Integer> r = new ArrayList<>();
+        for (int i = xx - 1; i <= xx + 1; i++) {
+            for (int j = yy - 1; j <= yy + 1; j++) {
+                TreeMap<Integer, List<Integer>> r1 = allSectors.get(i);
+                if (r1 == null) {
+                    continue;
+                }
+                List<Integer> r2 = r1.get(j);
+                if (r2 == null) {
+                    continue;
+                }
+                r.addAll(r2);
+            }
+        }
+        return r;
+    }
+
     private List<Node> convertPostCoordsToNodes(double[] postsCoords, double l) {
         if (debug) {
             System.out.println("Converting post coords to nodes...");
@@ -198,7 +247,16 @@ public class Solution2 {
         List<Node> startingNodes = new ArrayList<>();
         List<Node> endingNodes = new ArrayList<>(); //not used. Just to remind me that there are ending nodes
 
-        List<Node> allNodes = new ArrayList<>();
+        if (printPerformance) {
+            startCounting();
+        }
+        TreeMap<Integer, TreeMap<Integer, List<Integer>>> sectors = convertPostCoordsToSectors(postsCoords);
+        if (printPerformance) {
+            System.out.println("Converted to sectors: " + stopCountingStr());
+        }
+
+//        List<Node> allNodes = new ArrayList<>();
+        Map<Integer, Node> allNodes = new HashMap<>();
         for (int i = 0, j = 0; i < postsCoords.length; i += 2, j++) {
             Node node = new Node();
             node.id = j;
@@ -212,7 +270,15 @@ public class Solution2 {
                 node.magic.isReal = true;
             }
 
-            Iterator<Node> it = allNodes.iterator();
+            List<Integer> nodesNearSector = getNodesInSector(sectors, node.x, node.y);
+            List<Node> tmpNodes = new ArrayList<>();
+            for (Integer nns : nodesNearSector) {
+                Node nns1 = allNodes.get(nns);
+                if(nns1==null)continue;
+                tmpNodes.add(allNodes.get(nns));
+            }
+
+            Iterator<Node> it = tmpNodes.iterator();
             boolean first = true;
             while (it.hasNext()) {
                 Node n = it.next();
@@ -247,7 +313,7 @@ public class Solution2 {
                     }
                 }
             }
-            allNodes.add(node);
+            allNodes.put(node.id, node);
 
             if (node.y <= MAX_HOP_DISTANCE) {
                 startingNodes.add(node);
@@ -259,7 +325,7 @@ public class Solution2 {
 
         if (OPTIMIZATION_USE_MAGIC) {
             for (int i = 0; i < allNodes.size(); i++) {
-                for (Node n : allNodes) {
+                for (Node n : allNodes.values()) {
 
                     if (!n.magic.isReal) {
                         n.magic.isReal = n.hasMagic();
@@ -274,7 +340,7 @@ public class Solution2 {
             System.out.println("=============");
         }
         if (printPerformance) {
-            System.out.println("Converted post coords to nodes: " + stopCountingStr());
+            System.out.println("Converting post coords to nodes: " + stopCountingStr());
         }
         return startingNodes;
     }
@@ -291,7 +357,7 @@ public class Solution2 {
 
 class Node implements Comparable<Node> {
 
-    public int id;
+    public Integer id;
     public double x, y;
     public TreeSet<Node> nodes = new TreeSet<>();
     public Magic magic = new Magic(); //Magic is not real :( Now it is used to identify the posts closer to the edges.
