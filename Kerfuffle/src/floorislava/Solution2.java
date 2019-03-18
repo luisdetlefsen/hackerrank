@@ -8,16 +8,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 import java.util.TreeSet;
+import static misc.Performance.*;
 
 /**
  *
  * @author luisdetlefsen
  */
 public class Solution2 {
-//0.067s, 0.02s   || 0.017
+
     private Scanner scanner = new Scanner(System.in);
     private final DecimalFormat df = new DecimalFormat("#.####");
     private final boolean debug = false;
+    private final boolean printPerformance = true;
 
     private final double MAX_HOP_DISTANCE = 1.0d;
     private final int MAX_HOPS = 262;
@@ -65,6 +67,9 @@ public class Solution2 {
     }
 
     public double[] generatePostCoordinates(double w, double l, double s, int c) {
+        if (printPerformance) {
+            startCounting();
+        }
         double[] r = new double[c * 2];
         double ri = s;
         double oi;
@@ -79,6 +84,9 @@ public class Solution2 {
             }
         }
 
+        if (printPerformance) {
+            System.out.println("Generate post coordinates: " + stopCountingStr());
+        }
         return r;
     }
 
@@ -87,7 +95,7 @@ public class Solution2 {
             System.out.println("===Finding shortest path from node " + n.id);
             n.print();
         }
-        
+
         if (l - n.y <= MAX_HOP_DISTANCE) { //can it reach the other side?
             if (debug) {
                 System.out.println("Reached the other side in " + (i + 1) + " hops.");
@@ -116,7 +124,7 @@ public class Solution2 {
             if (nodesToIgnore.contains(ni.id)) {
                 continue;
             }
-            
+
             if (OPTIMIZATION_MOVE_UP_ONLY && ni.y < n.y) { //Search only nodes that are closer to the other edge
                 continue;
             }
@@ -151,16 +159,22 @@ public class Solution2 {
 
         double[] postCoords = generatePostCoordinates(w, l, s, c);
 
-        List<Node> startingNodes = convertPostCoordsToNodes(postCoords, l);
+        final List<Node> startingNodes = convertPostCoordsToNodes(postCoords, l);
         if (debug) {
             System.out.println("Finding shortest path from starting nodes...");
         }
 
+        if (printPerformance) {
+            startCounting();
+        }
         for (Node n : startingNodes) {
             int hops = 1;
             HashSet<Integer> nodesToIgnore = new HashSet<>();
             nodesToIgnore.add(n.id);
             hops = findShortestPath(n, hops, (int) l, nodesToIgnore);
+        }
+        if (printPerformance) {
+            System.out.println("Solving for shortest path: " + stopCountingStr());
         }
         if (debug) {
             System.out.println("Completed");
@@ -176,6 +190,9 @@ public class Solution2 {
     private List<Node> convertPostCoordsToNodes(double[] postsCoords, double l) {
         if (debug) {
             System.out.println("Converting post coords to nodes...");
+        }
+        if (printPerformance) {
+            startCounting();
         }
 
         List<Node> startingNodes = new ArrayList<>();
@@ -226,10 +243,7 @@ public class Solution2 {
                             n.print();
                             node.print();
                         }
-                        
 
-//                        throw new RuntimeException("Could not insert node");
-//                        System.err.println("COULD NOT INSERT NODE!");
                     }
                 }
             }
@@ -256,16 +270,16 @@ public class Solution2 {
                 }
             }
         }
-
-        System.out.println("=============");
+        if (debug) {
+            System.out.println("=============");
+        }
+        if (printPerformance) {
+            System.out.println("Converted post coords to nodes: " + stopCountingStr());
+        }
         return startingNodes;
     }
 
-    public double calculateDistanceBetweenPoints(
-            double x1,
-            double y1,
-            double x2,
-            double y2) {
+    public double calculateDistanceBetweenPoints(double x1, double y1, double x2, double y2) {
         return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
     }
 
@@ -280,7 +294,7 @@ class Node implements Comparable<Node> {
     public int id;
     public double x, y;
     public TreeSet<Node> nodes = new TreeSet<>();
-    public Magic magic = new Magic();
+    public Magic magic = new Magic(); //Magic is not real :( Now it is used to identify the posts closer to the edges.
 
     public boolean hasMagic() {
         if (magic.isReal) {
