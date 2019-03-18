@@ -37,7 +37,6 @@ public class Solution2 {
 
     private int totalIterations = 0;
 
-//    long t1 = i * 10_000_000l + i2;
     private final Map<Long, Integer> pathsTraveledWeight = new HashMap<>();
 
     public Solution2() {
@@ -402,32 +401,6 @@ class Node implements Comparable<Node> {
         return this.y - o.y < 0d ? 1 : -1;
     }
 
-    @Override
-    public int hashCode() {
-//        int hash = 7;
-//        hash = 67 * hash + this.id;
-        return id;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final Node other = (Node) obj;
-        return this.id == other.id;
-    }
-
-    public boolean equals(Node o) {
-        Node n = (Node) o;
-        return this.id == n.id;
-    }
 
     public void print() {
         System.out.println(id + "(" + x + "," + y + ")" + (hasMagic()));
