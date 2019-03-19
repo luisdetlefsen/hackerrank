@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import static misc.Performance.*;
 
 /**
@@ -21,7 +22,7 @@ public class Solution2 {
     private Scanner scanner = new Scanner(System.in);
     private final DecimalFormat df = new DecimalFormat("#.####");
     private final boolean debug = false;
-    private final boolean printPerformance = true;
+    private final boolean printPerformance = false;
 
     private final double MAX_HOP_DISTANCE = 1.0d;
     private int MAX_HOPS = 0;
@@ -30,7 +31,7 @@ public class Solution2 {
 
     private final boolean OPTIMIZATION_MOVE_UP_ONLY = false; //doesn't work in all cases
     private final boolean OPTIMIZATION_REMEMBER_PATHS_VISITED = true;
-    int shortestPathFound = Integer.MAX_VALUE;
+    AtomicInteger shortestPathFound = new AtomicInteger(); //Integer.MAX_VALUE;
     private final boolean PRINT_TOTAL_ITERATIONS = false;
 
     private int totalIterations = 0;
@@ -93,7 +94,7 @@ public class Solution2 {
         return r;
     }
 
-    private int findShortestPath(final Node n, int i, int l, final HashSet<Integer> nodesToIgnore) {
+    private int findShortestPath(final Node n, Integer i, int l, final HashSet<Integer> nodesToIgnore) {
         totalIterations++;
         if (debug) {
             System.out.println("===Finding shortest path from node " + n.id);
@@ -107,7 +108,7 @@ public class Solution2 {
             return i + 1;
         }
 
-        if (i >= shortestPathFound || i >= MAX_HOPS) {
+        if (i >= shortestPathFound.get() || i >= MAX_HOPS) {
             return Integer.MAX_VALUE;
         }
 
@@ -146,8 +147,8 @@ public class Solution2 {
                 System.out.println("Going from node " + n.id + " to node " + ni.id);
             }
             min = findShortestPath(ni, i + 1, l, nodesToIgnore);
-            if (min < shortestPathFound) {
-                shortestPathFound = min;
+            if (min < shortestPathFound.get()) {
+                shortestPathFound.set(min); //= min;
             }
             nodesToIgnore.remove(ni.id);
         }
@@ -165,6 +166,7 @@ public class Solution2 {
         double s = in[2];
         int c = in[3];
 
+        shortestPathFound.set(Integer.MAX_VALUE);
         MAX_HOPS = (int) Math.round(Math.sqrt(c)) + (int) Math.cbrt(c) + 15;
 //MAX_HOPS = 265;
 //        System.out.println("Max hops: " + MAX_HOPS);
@@ -179,12 +181,20 @@ public class Solution2 {
         if (printPerformance) {
             startCounting();
         }
-        for (Node n : startingNodes) {
+
+        startingNodes.parallelStream().forEach((t) -> {
             int hops = 1;
             HashSet<Integer> nodesToIgnore = new HashSet<>();
-            nodesToIgnore.add(n.id);
-            hops = findShortestPath(n, hops, (int) l, nodesToIgnore);
-        }
+            nodesToIgnore.add(t.id);
+            hops = findShortestPath(t, hops, (int) l, nodesToIgnore);
+        });
+
+//        for (Node n : startingNodes) {
+//            int hops = 1;
+//            HashSet<Integer> nodesToIgnore = new HashSet<>();
+//            nodesToIgnore.add(n.id);
+//            hops = findShortestPath(n, hops, (int) l, nodesToIgnore);
+//        }
         if (printPerformance) {
             System.out.println("Solving for shortest path: " + stopCountingStr());
         }
@@ -192,14 +202,14 @@ public class Solution2 {
             System.out.println("Completed");
         }
 
-        if (shortestPathFound == Integer.MAX_VALUE) {
-            shortestPathFound = -1;
+        if (shortestPathFound.get() == Integer.MAX_VALUE) {
+            shortestPathFound.set(-1);// = -1;
         }
         System.out.println(shortestPathFound);
         if (PRINT_TOTAL_ITERATIONS) {
             System.out.println("Iterations: " + totalIterations);
         }
-        return shortestPathFound;
+        return shortestPathFound.get();
     }
 
     // Enter the X coordinate, then the Y coordinate, and get a List of node ids that are in that sector
@@ -289,7 +299,7 @@ public class Solution2 {
                 }
                 tmpNodes.add(allNodes.get(nns));
             }
-    
+
             Iterator<Node> it = tmpNodes.iterator();
             while (it.hasNext()) {
                 Node n = it.next();
@@ -341,7 +351,7 @@ class Node {
 
     public Integer id;
     public double x, y;
-    public List<Node> nodes = new ArrayList<>();    
+    public List<Node> nodes = new ArrayList<>();
 
     public void print() {
         System.out.println(id + "(" + x + "," + y + ")");
