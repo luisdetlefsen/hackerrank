@@ -3,6 +3,8 @@ package floorislava;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -227,7 +229,6 @@ public class Solution2 {
                 }
             }
         } else {
-//            Collections.reverse(startingNodes);
             for (Node n : startingNodes) {
                 int hops = 1;
                 HashSet<Integer> nodesToIgnore = new HashSet<>();
@@ -369,6 +370,16 @@ public class Solution2 {
                 startingNodes.add(node);
             }
         }
+
+        for (Node ns : allNodes.values()) {
+            Collections.sort(ns.nodes, new Comparator<Node>() {
+                @Override
+                public int compare(Node o1, Node o2) {
+                    return (int) (100 * (o2.y - o1.y));
+                }
+            });
+        }
+        
         if (debug) {
             System.out.println("Completed");
         }
@@ -393,11 +404,11 @@ public class Solution2 {
 
 }
 
-class Node {
+class Node{
 
     public Integer id;
     public double x, y;
-    public List<Node> nodes = new ArrayList<>();
+    public List<Node> nodes = new ArrayList<>();   
 
     public void print() {
         System.out.println(id + "(" + x + "," + y + ")");
