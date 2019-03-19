@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import static misc.Performance.*;
 
@@ -33,7 +34,9 @@ public class Solution2 {
     private final boolean OPTIMIZATION_REMEMBER_PATHS_VISITED = true;
     AtomicInteger shortestPathFound = new AtomicInteger(); //Integer.MAX_VALUE;
     private final boolean PRINT_TOTAL_ITERATIONS = false;
-
+    private final boolean USE_THREADS_1 = false;
+    private final boolean USE_THREADS_2 = false;
+    private final boolean USE_THREADS_3 = false;
     private int totalIterations = 0;
 
     final Map<Integer, Map<Integer, Integer>> pathsTraveledWeight = new HashMap<>();
@@ -182,19 +185,57 @@ public class Solution2 {
             startCounting();
         }
 
-        startingNodes.parallelStream().forEach((t) -> {
-            int hops = 1;
-            HashSet<Integer> nodesToIgnore = new HashSet<>();
-            nodesToIgnore.add(t.id);
-            hops = findShortestPath(t, hops, (int) l, nodesToIgnore);
-        });
+        if (USE_THREADS_1) {
+            startingNodes.parallelStream().forEach((t) -> {
+                int hops = 1;
+                HashSet<Integer> nodesToIgnore = new HashSet<>();
+                nodesToIgnore.add(t.id);
+                hops = findShortestPath(t, hops, (int) l, nodesToIgnore);
+            });
+        } else if (USE_THREADS_2) {
+            ForkJoinPool customThreadPool = new ForkJoinPool(startingNodes.size());
+            customThreadPool.submit(
+                    () -> startingNodes.parallelStream().forEach(x -> {
+                        int hops = 1;
+                        HashSet<Integer> nodesToIgnore = new HashSet<>();
+                        nodesToIgnore.add(x.id);
+                        hops = findShortestPath(x, hops, (int) l, nodesToIgnore);
+                    }
+                    )).join();
+        } else if (USE_THREADS_3) {
+            List<Thread> threads = new ArrayList<>();
 
-//        for (Node n : startingNodes) {
-//            int hops = 1;
-//            HashSet<Integer> nodesToIgnore = new HashSet<>();
-//            nodesToIgnore.add(n.id);
-//            hops = findShortestPath(n, hops, (int) l, nodesToIgnore);
-//        }
+            for (Node n : startingNodes) {
+                Thread tt = new Thread() {
+                    public void run() {
+                        HashSet<Integer> nodesToIgnore = new HashSet<>();
+                        nodesToIgnore.add(n.id);
+                        findShortestPath(n, 1, (int) l, nodesToIgnore);
+                    }
+                };
+                threads.add(tt);
+            }
+
+            for (Thread t : threads) {
+                t.start();
+            }
+
+            for (Thread t : threads) {
+                try {
+                    t.join();
+                } catch (InterruptedException ex) {
+                }
+            }
+        } else {
+//            Collections.reverse(startingNodes);
+            for (Node n : startingNodes) {
+                int hops = 1;
+                HashSet<Integer> nodesToIgnore = new HashSet<>();
+                nodesToIgnore.add(n.id);
+                hops = findShortestPath(n, hops, (int) l, nodesToIgnore);
+            }
+        }
+
         if (printPerformance) {
             System.out.println("Solving for shortest path: " + stopCountingStr());
         }
@@ -343,6 +384,11 @@ public class Solution2 {
 
     public double calculateDistanceBetweenPoints(double x1, double y1, double x2, double y2) {
         return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
+    }
+    
+    public static void main(String[] args) {
+        Solution2 s = new Solution2();
+        s.solve();
     }
 
 }
