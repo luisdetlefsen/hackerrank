@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import static misc.Performance.*;
 
 /**
@@ -22,7 +21,7 @@ public class Solution2 {
     private Scanner scanner = new Scanner(System.in);
     private final DecimalFormat df = new DecimalFormat("#.####");
     private final boolean debug = false;
-    private final boolean printPerformance = false;
+    private final boolean printPerformance = true;
 
     private final double MAX_HOP_DISTANCE = 1.0d;
     private int MAX_HOPS = 0;
@@ -30,7 +29,6 @@ public class Solution2 {
     private final boolean ROUND_EXPERIMENTAL = true; //it is more accurate
 
     private final boolean OPTIMIZATION_MOVE_UP_ONLY = false; //doesn't work in all cases
-    private final boolean OPTIMIZATION_USE_MAGIC = false; //magic is not real
     private final boolean OPTIMIZATION_REMEMBER_PATHS_VISITED = true;
     int shortestPathFound = Integer.MAX_VALUE;
     private final boolean PRINT_TOTAL_ITERATIONS = false;
@@ -128,7 +126,6 @@ public class Solution2 {
                     } else {
                         pt1.put(ni.id, i);
                     }
-
                 } else {
                     Map<Integer, Integer> ptt = new HashMap<>();
                     ptt.put(ni.id, i);
@@ -141,10 +138,6 @@ public class Solution2 {
             }
 
             if (OPTIMIZATION_MOVE_UP_ONLY && ni.y < n.y - 0.5d) { //Search only nodes that are closer to the other edge
-                continue;
-            }
-
-            if (OPTIMIZATION_USE_MAGIC && !ni.hasMagic()) {
                 continue;
             }
 
@@ -285,7 +278,6 @@ public class Solution2 {
                 if (debug) {
                     System.out.println("Found magic in node " + node.id);
                 }
-                node.magic.isReal = true;
             }
 
             List<Integer> nodesNearSector = getNodesInSector(sectors, node.x, node.y);
@@ -297,26 +289,13 @@ public class Solution2 {
                 }
                 tmpNodes.add(allNodes.get(nns));
             }
-
+    
             Iterator<Node> it = tmpNodes.iterator();
-            boolean first = true;
             while (it.hasNext()) {
                 Node n = it.next();
                 if (calculateDistanceBetweenPoints(n.x, n.y, node.x, node.y) <= MAX_HOP_DISTANCE) {
                     boolean b2 = node.nodes.add(n);
                     boolean b1 = n.nodes.add(node);
-
-                    if (OPTIMIZATION_USE_MAGIC && first) {
-                        first = false;
-                        node.magic = n.magic;
-                        if (l - node.y <= MAX_HOP_DISTANCE) {
-                            node.magic.isReal = true;
-                            for (Node nn : n.nodes) {
-                                nn.magic.isReal = true;
-                            }
-                        }
-
-                    }
 
                     if (debug && (!b1 || !b2)) {
                         if (!b1) { //There is already a node with the same coordinates. It happens.
@@ -343,19 +322,6 @@ public class Solution2 {
             System.out.println("Completed");
         }
 
-        if (OPTIMIZATION_USE_MAGIC) {
-            for (int i = 0; i < allNodes.size(); i++) {
-                for (Node n : allNodes.values()) {
-
-                    if (!n.magic.isReal) {
-                        n.magic.isReal = n.hasMagic();
-                    }
-                    if (debug) {
-                        n.print();
-                    }
-                }
-            }
-        }
         if (debug) {
             System.out.println("=============");
         }
@@ -369,50 +335,18 @@ public class Solution2 {
         return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
     }
 
-    private Long generatePathTraveled(int id1, int id2) {
-        return id1 * 10_000_000l + id2;
-    }
-
 }
 
-class Node implements Comparable<Node> {
+class Node {
 
     public Integer id;
     public double x, y;
-    public TreeSet<Node> nodes = new TreeSet<>();
-    public Magic magic = new Magic(); //Magic is not real :( Now it is used to identify the posts closer to the edges.
-
-    public boolean hasMagic() {
-        if (magic.isReal) {
-            return true;
-        }
-        for (Node n : nodes) {
-            if (n.magic.isReal) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public int compareTo(Node o) {
-        if (this.y == o.y && this.x == o.x) {
-            return 0;
-        }
-
-        return this.y - o.y < 0d ? 1 : -1;
-    }
+    public List<Node> nodes = new ArrayList<>();    
 
     public void print() {
-        System.out.println(id + "(" + x + "," + y + ")" + (hasMagic()));
+        System.out.println(id + "(" + x + "," + y + ")");
         for (Node n : nodes) {
-            System.out.println("    " + n.id + "(" + n.x + "," + n.y + ")" + n.hasMagic());
+            System.out.println("    " + n.id + "(" + n.x + "," + n.y + ")");
         }
     }
-
-}
-
-class Magic {
-
-    public boolean isReal = false;
 }
