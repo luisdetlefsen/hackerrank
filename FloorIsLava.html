@@ -1,0 +1,269 @@
+<html>
+
+<body>
+
+    <div>
+        <label for="width">width:</label>
+        <input type="number" id="width" />
+        <label for="length">length:</label>
+        <input type="number" id="length" />
+        <label for="seed">seed:</label>
+        <input type="number" id="seed" />
+
+        <label for="count">count:</label>
+        <input type="number" id="count" />
+        <br />
+        <label for="drawIds">Draw point ids</label>
+        <input type="checkbox" id="drawIds" />
+        <label for="scale">Scale:</label>
+        <input type="number" id="scale" value="10" />
+        <button onclick="solve()">Solve</button>
+    </div>
+    <br />
+
+    <div>
+        <canvas id="myCanvas" style="border: solid black 1px;"></canvas>
+    </div>
+
+</body>
+
+</html>
+
+<script>
+
+    var SCALE_FACTOR = 100;
+    const POINT_RADIUS = 5;
+    const POINT_COLOR = "blue";
+    const POINT_COLOR_MAGIC = "green";
+    const POINT_ID_COLOR = "black";
+    const POINT_PREFIX = "P";
+    const AXIS_COLOR = "lightgray";
+    const AXIS_DOTTED = true;
+    var DRAW_IDS = true;
+    const MAX_HOP_DISTANCE = 1.0;
+    const MAX_HOPS = 91;
+    var shortestPathFound = Infinity;
+
+    var totalIterations = 0;
+    var pathsTraveled = [];
+
+    function generateR(r) {
+        return (1664525.0 * r + 1013904223.0) % 4294967296.0;
+    }
+
+    function generateO(r) {
+        return r / 4294967296.0;
+    }
+
+    function generateCoordinates(w, l, s, c) {
+        var r = [];
+
+        var ri = s;
+        var oi;
+        for (var i = 0; i < c * 2; i++) {
+            ri = generateR(ri);
+            oi = generateO(ri);
+
+            if (i % 2 == 0) {
+                r[i] = oi * w;
+            } else {
+                r[i] = oi * l;
+            }
+        }
+        return r;
+    }
+
+    function drawAxis(ctx, w, l) {
+        ctx.strokeStyle = AXIS_COLOR;
+        if (AXIS_DOTTED) {
+            ctx.setLineDash([5, 3]);
+        }
+
+        for (var i = 0; i < w; i++) {
+            for (var j = 0; j < l; j++) {
+                ctx.beginPath();
+                ctx.moveTo(i * SCALE_FACTOR, 0);
+                ctx.lineTo(i * SCALE_FACTOR, l * SCALE_FACTOR);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(0, j * SCALE_FACTOR);
+                ctx.lineTo(w * SCALE_FACTOR, j * SCALE_FACTOR);
+                ctx.stroke();
+            }
+        }
+    }
+
+    function drawPoints(nodes, ctx, l, d) {
+        var length = l * SCALE_FACTOR;
+
+        if (d) {
+            ctx.font = "12px Arial";
+        }
+        for (var i = 0; i < nodes.length; i++) {
+            ctx.beginPath();
+            if (nodes[i].magic.isReal) {
+                ctx.fillStyle = POINT_COLOR_MAGIC;
+            } else {
+                ctx.fillStyle = POINT_COLOR;
+            }
+            ctx.arc(nodes[i].x * SCALE_FACTOR, length - (nodes[i].y * SCALE_FACTOR), POINT_RADIUS, 0, 2 * Math.PI, true);
+            ctx.fill();
+            if (d) {
+                ctx.fillStyle = POINT_ID_COLOR;
+                ctx.fillText(POINT_PREFIX + nodes[i].id, nodes[i].x * SCALE_FACTOR - 5, length - (nodes[i].y * SCALE_FACTOR) + 20);
+            }
+
+        }
+    }
+
+    function generatePathTraveled(id1, id2, w) {
+        return w * 100000000000000 + id1 * 10000000 + id2;
+    }
+
+    function calculateDistanceBetweenPoints( x1,y1, x2,y2) {
+        return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
+    }
+
+    function convertCoordsToNodes(coords, l) {
+        var nodes = [];
+        var startingNodes = [];
+        for (var i = 0, j = 0; i < coords.length; i += 2, j++) {
+            var node = {
+                x: coords[i]
+                , y: coords[i + 1]
+                , id: j
+                , nodes: []
+                , magic: { isReal: false }              
+            };
+
+            if (l - node.y <= MAX_HOP_DISTANCE || node.y <= MAX_HOP_DISTANCE ) {
+                node.magic.isReal = true;
+            }
+
+            for (var z = 0; z < nodes.length; z++) {
+                var n = nodes[z];
+
+                if (calculateDistanceBetweenPoints(n.x, n.y, node.x, node.y) <= MAX_HOP_DISTANCE) {
+                    node.nodes.push(n);
+                    n.nodes.push(node);
+                }
+            }
+            nodes.push(node);
+            if (node.y <= MAX_HOP_DISTANCE) {
+                startingNodes.push(node);
+            }
+        }
+        return { start: startingNodes, all: nodes };
+    }
+
+    function findShortestPath(n, i, l, nodesToIgnore, ctx) {
+        totalIterations++;
+        var min = Infinity;
+        if (l - n.y <= MAX_HOP_DISTANCE) { //can it reach the other side?
+            ctx.strokeStyle = "red";
+            ctx.beginPath();
+            ctx.moveTo(n.x * SCALE_FACTOR, l * SCALE_FACTOR - (n.y * SCALE_FACTOR));
+            ctx.lineTo(n.x * SCALE_FACTOR, 0);
+            ctx.stroke();
+
+            ctx.strokeStyle = "purple";
+            ctx.beginPath();
+            ctx.arc(n.x * SCALE_FACTOR, l * SCALE_FACTOR - (n.y * SCALE_FACTOR), POINT_RADIUS + 1, 0, 2 * Math.PI, true);
+            ctx.stroke();
+            return i + 1; //comment out if want to display ALL posibilities
+            // min = i+1;
+        }
+        if (i >= shortestPathFound || i >= MAX_HOPS) {
+            return Infinity;
+        }
+        for (var ii = 0; ii < n.nodes.length; ii++) {
+            var ni = n.nodes[ii];
+
+            var pt = generatePathTraveled(n.id, ni.id, i + 1);
+
+            if (pathsTraveled.indexOf(pt) >= 0) {
+                continue;
+            }
+            pathsTraveled.push(pt);
+
+            if (nodesToIgnore.includes(ni)) {
+                continue;
+            }
+            // if (ni.y < n.y) { //Search only nodes that are closer to the other edge
+            //     continue;
+            // }
+
+            nodesToIgnore.push(ni);
+
+            ctx.strokeStyle = "red";
+            ctx.beginPath();
+            ctx.moveTo(n.x * SCALE_FACTOR, l * SCALE_FACTOR - (n.y * SCALE_FACTOR));
+            ctx.lineTo(ni.x * SCALE_FACTOR, l * SCALE_FACTOR - (ni.y * SCALE_FACTOR));
+            ctx.stroke();
+
+            min = findShortestPath(ni, i + 1, l, nodesToIgnore, ctx);
+            if (min < shortestPathFound) {
+                shortestPathFound = min;
+            }
+            nodesToIgnore.pop();
+        }
+        return min;
+    }
+
+    function solve() {
+        var t0 = performance.now();
+        //load config
+        SCALE_FACTOR = parseInt(document.getElementById("scale").value);
+        DRAW_IDS = document.getElementById('drawIds').checked;
+
+        //load problem input
+        var w = parseInt(document.getElementById("width").value);
+        var l = parseInt(document.getElementById("length").value);
+        var s = parseInt(document.getElementById("seed").value);
+        var c = parseInt(document.getElementById("count").value);
+        shortestPathFound = Infinity;
+
+        var canvas = document.getElementById("myCanvas");
+        canvas.width = w * SCALE_FACTOR;
+        canvas.height = l * SCALE_FACTOR;
+
+        var canvasWidth = canvas.width;
+        var canvasHeight = canvas.height;
+        var ctx = canvas.getContext("2d");
+        var canvasData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+
+        var coords = generateCoordinates(w, l, s, c);
+
+        var nodes = convertCoordsToNodes(coords, l);
+
+        drawAxis(ctx, w, l);
+
+        drawPoints(nodes.all, ctx, l, DRAW_IDS);
+
+        for (var i = 0; i < nodes.start.length; i++) {
+            totalIterations++;
+            var hops = 1;
+            var nodesToIgnore = [];
+            nodesToIgnore.push(nodes.start[i]);
+
+            ctx.strokeStyle = "red";
+            ctx.beginPath();
+            ctx.moveTo(nodes.start[i].x * SCALE_FACTOR, l * SCALE_FACTOR);
+            ctx.lineTo(nodes.start[i].x * SCALE_FACTOR, l * SCALE_FACTOR - (nodes.start[i].y * SCALE_FACTOR));
+            ctx.stroke();
+
+
+            hops = findShortestPath(nodes.start[i], hops, l, nodesToIgnore, ctx);
+
+        }
+        var t1 = performance.now();
+        alert("Shortest path: " + shortestPathFound + ". Iterations: " + totalIterations + " in " + (t1 - t0) + " milliseconds.");
+
+        // for (var i = 0; i < coords.length; i++) {
+        //     console.log(coords[i]);
+        // }
+
+    }
+
+</script>
