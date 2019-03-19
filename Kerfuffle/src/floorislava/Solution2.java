@@ -37,7 +37,7 @@ public class Solution2 {
 
     private int totalIterations = 0;
 
-    private final Map<Long, Integer> pathsTraveledWeight = new HashMap<>();
+    final Map<Integer, Map<Integer, Integer>> pathsTraveledWeight = new HashMap<>();
 
     public Solution2() {
         df.setRoundingMode(RoundingMode.HALF_UP);
@@ -116,21 +116,23 @@ public class Solution2 {
         int min = Integer.MAX_VALUE;
         for (Node ni : n.nodes) {
             if (OPTIMIZATION_REMEMBER_PATHS_VISITED) {
-                Long pt = generatePathTraveled(n.id, ni.id);
-                if (debug) {
-                    System.out.println("Traveled " + pt);
-                }
-                Integer ptw = pathsTraveledWeight.get(pt);
-                if (ptw != null && ptw <= i) {
-                    continue;
-                }
+                Map<Integer, Integer> pt1 = pathsTraveledWeight.get(n.id);
+                if (pt1 != null) {
+                    Integer pt2 = pt1.get(ni.id);
+                    if (pt2 != null) {
+                        if (pt2 > i) {
+                            pt1.replace(ni.id, i);
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        pt1.put(ni.id, i);
+                    }
 
-                if (ptw != null && ptw > i) {
-                    pathsTraveledWeight.replace(pt, i);
-                }
-
-                if (ptw == null) {
-                    pathsTraveledWeight.put(pt, i);
+                } else {
+                    Map<Integer, Integer> ptt = new HashMap<>();
+                    ptt.put(ni.id, i);
+                    pathsTraveledWeight.put(n.id, ptt);
                 }
             }
 
@@ -400,7 +402,6 @@ class Node implements Comparable<Node> {
 
         return this.y - o.y < 0d ? 1 : -1;
     }
-
 
     public void print() {
         System.out.println(id + "(" + x + "," + y + ")" + (hasMagic()));
