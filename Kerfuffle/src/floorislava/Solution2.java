@@ -1,5 +1,8 @@
 package floorislava;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -35,16 +38,41 @@ public class Solution2 {
     private final boolean OPTIMIZATION_MOVE_UP_ONLY = false; //doesn't work in all cases
     private final boolean OPTIMIZATION_REMEMBER_PATHS_VISITED = true;
     AtomicInteger shortestPathFound = new AtomicInteger(); //Integer.MAX_VALUE;
-    private final boolean PRINT_TOTAL_ITERATIONS = false;
+    private final boolean PRINT_TOTAL_ITERATIONS = true;
     private final boolean USE_THREADS_1 = false;
     private final boolean USE_THREADS_2 = false;
     private final boolean USE_THREADS_3 = false;
     private int totalIterations = 0;
 
+    private final boolean SAVE_RESULT_TO_FILE = true;
+
+    private BufferedWriter bw = null;
+
     final Map<Integer, Map<Integer, Integer>> pathsTraveledWeight = new HashMap<>();
 
+    /*
+    
+    file output:
+    w,l,s,c,scale
+    id,x,y
+    .
+    +,id
+    id,id
+    id,+
+     */
     public Solution2() {
         df.setRoundingMode(RoundingMode.HALF_UP);
+    }
+
+    private void save(String s) {
+        if (SAVE_RESULT_TO_FILE) {
+            try {
+                bw.write(s);
+                bw.newLine();
+            } catch (IOException ex) {
+
+            }
+        }
     }
 
     private Integer[] readInput() {
@@ -101,6 +129,7 @@ public class Solution2 {
 
     private int findShortestPath(final Node n, Integer i, int l, final HashSet<Integer> nodesToIgnore) {
         totalIterations++;
+//        save(n.id + "," + ni.id); uncomment if you want to display all the possibilities that are evaluated
         if (debug) {
             System.out.println("===Finding shortest path from node " + n.id);
             n.print();
@@ -110,6 +139,8 @@ public class Solution2 {
             if (debug) {
                 System.out.println("Reached the other side in " + (i + 1) + " hops.");
             }
+            save(n.id + ",+");
+//            save("#");
             return i + 1;
         }
 
@@ -119,6 +150,9 @@ public class Solution2 {
 
         int min = Integer.MAX_VALUE;
         for (Node ni : n.nodes) {
+//            if(ni.id==n.id){
+//                continue;
+//            }
             if (OPTIMIZATION_REMEMBER_PATHS_VISITED) {
                 Map<Integer, Integer> pt1 = pathsTraveledWeight.get(n.id);
                 if (pt1 != null) {
@@ -151,6 +185,7 @@ public class Solution2 {
             if (debug) {
                 System.out.println("Going from node " + n.id + " to node " + ni.id);
             }
+            save(n.id + "," + ni.id);
             min = findShortestPath(ni, i + 1, l, nodesToIgnore);
             if (min < shortestPathFound.get()) {
                 shortestPathFound.set(min); //= min;
@@ -170,6 +205,16 @@ public class Solution2 {
         double l = in[1];
         double s = in[2];
         int c = in[3];
+
+        if (SAVE_RESULT_TO_FILE) {
+            try {
+                this.bw = new BufferedWriter(new FileWriter("/Users/luisdetlefsen/filout/floorislava" + (int) w + "_" + (int) l + "_" + (int) s + "_" + c));
+            } catch (IOException ex) {
+
+            }
+        }
+//        w,l,s,c,scale
+        save(w + "," + l + "," + s + "," + c + "," + 100);
 
         shortestPathFound.set(Integer.MAX_VALUE);
         MAX_HOPS = (int) Math.round(Math.sqrt(c)) + (int) Math.cbrt(c) + 15;
@@ -231,6 +276,7 @@ public class Solution2 {
         } else {
             for (Node n : startingNodes) {
                 int hops = 1;
+                save("+," + n.id);
                 HashSet<Integer> nodesToIgnore = new HashSet<>();
                 nodesToIgnore.add(n.id);
                 hops = findShortestPath(n, hops, (int) l, nodesToIgnore);
@@ -250,6 +296,11 @@ public class Solution2 {
         System.out.println(shortestPathFound);
         if (PRINT_TOTAL_ITERATIONS) {
             System.out.println("Iterations: " + totalIterations);
+        }
+        try {
+            bw.flush();
+        } catch (IOException ex) {
+
         }
         return shortestPathFound.get();
     }
@@ -326,6 +377,8 @@ public class Solution2 {
             node.x = postsCoords[i];
             node.y = postsCoords[i + 1];
 
+            save(node.id + "," + node.x + "," + node.y);
+
             if (l - node.y <= MAX_HOP_DISTANCE) {
                 if (debug) {
                     System.out.println("Found magic in node " + node.id);
@@ -379,7 +432,7 @@ public class Solution2 {
                 }
             });
         }
-        
+
         if (debug) {
             System.out.println("Completed");
         }
@@ -387,6 +440,7 @@ public class Solution2 {
         if (debug) {
             System.out.println("=============");
         }
+        save(".");
         if (printPerformance) {
             System.out.println("Converting post coords to nodes: " + stopCountingStr());
         }
@@ -396,7 +450,7 @@ public class Solution2 {
     public double calculateDistanceBetweenPoints(double x1, double y1, double x2, double y2) {
         return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
     }
-    
+
     public static void main(String[] args) {
         Solution2 s = new Solution2();
         s.solve();
@@ -404,11 +458,11 @@ public class Solution2 {
 
 }
 
-class Node{
+class Node {
 
     public Integer id;
     public double x, y;
-    public List<Node> nodes = new ArrayList<>();   
+    public List<Node> nodes = new ArrayList<>();
 
     public void print() {
         System.out.println(id + "(" + x + "," + y + ")");

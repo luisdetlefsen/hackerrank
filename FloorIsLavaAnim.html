@@ -1,0 +1,195 @@
+<html>
+
+<body>
+    <input type="file" name="file" id="file">
+    <br />
+    Current iteration: <span id="currIt"></span>
+    <br />
+    <div>
+        <canvas id="myCanvas" style="border: solid black 1px;"></canvas>
+    </div>
+
+</body>
+
+</html>
+<script>
+
+    const POINT_COLOR = "blue";
+    const POINT_RADIUS = 5;
+    const AXIS_COLOR = "lightgray";
+    const POINT_PREFIX = "P";
+    const AXIS_DOTTED = true;
+    const DRAW_ID = true;
+    var allPoints = new Map();
+    var w, l, s, c, scale, width, length;
+    var allPaths = [];
+    var ctx;
+    var intervalHandle;
+    var fps = 1;
+    var currentPoint = 0;
+    var drawingPoints = true;
+
+    var iterStatus = document.getElementById('currIt');
+
+
+    document.getElementById('file').onchange = function () {
+
+        var file = this.files[0];
+
+        var reader = new FileReader();
+        reader.onload = function (progressEvent) {
+            // Entire file
+            // console.log(this.result);
+
+            // By lines
+            var addingIds = true;
+
+            let lines = this.result.split('\n');
+            for (let line = 0; line < lines.length; line++) {
+                let tokens = lines[line].split(',');
+                if (tokens[0] == '.') {
+                    addingIds = false;
+                    continue;
+                }
+                if (line == 0) {
+                    w = tokens[0];
+                    l = tokens[1];
+                    s = parseInt(tokens[2]);
+                    c = parseInt(tokens[3]);
+                    scale = parseInt(tokens[4]);
+                } else if (addingIds) {
+                    allPoints.set(parseInt(tokens[0]), { x: parseFloat(tokens[1]), y: parseFloat(tokens[2]) });
+                } else {
+                    if (tokens[0] == '+') {
+                        allPaths.push({ from: '+', to: parseInt(tokens[1]) });
+                    } else if (tokens[1] == '+') {
+                        allPaths.push({ from: parseInt(tokens[0]), to: '+' });
+                    } else if (lines[line].length == 0) {
+                        continue;
+                    } else
+                        allPaths.push({ from: parseInt(tokens[0]), to: parseInt(tokens[1]) });
+                }
+            }
+
+            init();
+            start();
+        };
+        reader.readAsText(file);
+    };
+
+    function init() {
+        var canvas = document.getElementById("myCanvas");
+        canvas.width = w * scale;
+        canvas.height = l * scale;
+        width = canvas.width;
+        length = canvas.height;
+        ctx = canvas.getContext("2d");
+    }
+
+    function start() {
+        if (intervalHandle)
+            clearInterval(intervalHandle);
+        drawAxis(ctx, width, length);
+        ctx.setLineDash([]);
+        intervalHandle = setInterval(mainLoop, 1000 / fps);
+    }
+
+
+    function drawPoint(id) {
+        ctx.beginPath();
+        ctx.fillStyle = POINT_COLOR;
+        let point = allPoints.get(id);
+        ctx.arc(point.x * scale, length - (point.y * scale), POINT_RADIUS, 0, 2 * Math.PI, true);
+        ctx.fill();
+
+        if (DRAW_ID) {
+            ctx.fillStyle = "black";
+            ctx.fillText(POINT_PREFIX + id, point.x * scale - 5, length - (point.y * scale) + 20);
+        }
+    }
+
+    function drawLine(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    function drawAxis(ctx, w, l) {
+        ctx.strokeStyle = AXIS_COLOR;
+        if (AXIS_DOTTED) {
+            ctx.setLineDash([5, 3]);
+        }
+
+        for (var i = 0; i < w; i++) {
+            for (var j = 0; j < l; j++) {
+                ctx.beginPath();
+                ctx.moveTo(i * scale, 0);
+                ctx.lineTo(i * scale, l * scale);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(0, j * scale);
+                ctx.lineTo(w * scale, j * scale);
+                ctx.stroke();
+            }
+        }
+    }
+
+    function mainLoop() {
+
+        if (drawingPoints) {
+            while (drawingPoints) {
+                drawPoint(currentPoint);
+                currentPoint++;
+                if (currentPoint >= allPoints.size) {
+                    drawingPoints = false;
+                    currentPoint = 0;
+                }
+            }
+        } else {
+            iterStatus.innerHTML = currentPoint;
+            if (currentPoint >= allPaths.length) {
+                clearInterval(intervalHandle);
+                iterStatus.innerHTML += "<bold> COMPLETED </bold>";
+            }
+            if (currentPoint > 0) {
+                ctx.strokeStyle = 'red'; //previous path
+                ctx.lineWidth = 2;
+                let pathInfo = allPaths[currentPoint - 1];
+                if (pathInfo.from == '+') {
+                    let to = allPoints.get(pathInfo.to);
+                    drawLine(to.x * scale, length, to.x * scale, length - to.y * scale);
+
+                } else if (pathInfo.to == '+') {
+                    let from = allPoints.get(pathInfo.from);
+                    drawLine(from.x * scale, length - from.y * scale, from.x * scale, 0);
+                } else {
+                    let from = allPoints.get(pathInfo.from);
+                    let to = allPoints.get(pathInfo.to);
+                    drawLine(from.x * scale, length - from.y * scale, to.x * scale, length - to.y * scale);
+                }
+            }
+
+
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'green'; //current path
+            let pathInfo = allPaths[currentPoint];
+            if (pathInfo.from == '+') {
+                let to = allPoints.get(pathInfo.to);
+                drawLine(to.x * scale, length, to.x * scale, length - to.y * scale);
+
+            } else if (pathInfo.to == '+') {
+                let from = allPoints.get(pathInfo.from);
+                drawLine(from.x * scale, length - from.y * scale, from.x * scale, 0);
+            } else {
+                let from = allPoints.get(pathInfo.from);
+                let to = allPoints.get(pathInfo.to);
+                drawLine(from.x * scale, length - from.y * scale, to.x * scale, length - to.y * scale);
+            }
+            currentPoint++;
+        }
+
+    }
+
+</script>
