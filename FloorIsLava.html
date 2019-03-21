@@ -43,9 +43,9 @@
     const MAX_HOP_DISTANCE = 1.0;
     const MAX_HOPS = 91;
     var shortestPathFound = Infinity;
+    var ptw = new Map();
 
     var totalIterations = 0;
-    var pathsTraveled = [];
 
     function generateR(r) {
         return (1664525.0 * r + 1013904223.0) % 4294967296.0;
@@ -117,11 +117,11 @@
         }
     }
 
-    function generatePathTraveled(id1, id2, w) {
-        return w * 100000000000000 + id1 * 10000000 + id2;
+    function generatePathTraveled(id1, id2) {
+        return id1 * 10000000 + id2;
     }
 
-    function calculateDistanceBetweenPoints( x1,y1, x2,y2) {
+    function calculateDistanceBetweenPoints(x1, y1, x2, y2) {
         return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
     }
 
@@ -134,10 +134,10 @@
                 , y: coords[i + 1]
                 , id: j
                 , nodes: []
-                , magic: { isReal: false }              
+                , magic: { isReal: false }
             };
 
-            if (l - node.y <= MAX_HOP_DISTANCE || node.y <= MAX_HOP_DISTANCE ) {
+            if (l - node.y <= MAX_HOP_DISTANCE || node.y <= MAX_HOP_DISTANCE) {
                 node.magic.isReal = true;
             }
 
@@ -180,12 +180,20 @@
         for (var ii = 0; ii < n.nodes.length; ii++) {
             var ni = n.nodes[ii];
 
-            var pt = generatePathTraveled(n.id, ni.id, i + 1);
+            var pt = generatePathTraveled(n.id, ni.id);
 
-            if (pathsTraveled.indexOf(pt) >= 0) {
-                continue;
+            if (ptw.has(pt)) {
+                var t = ptw.get(pt);
+                if (t <= i ) {
+                    continue;
+                } else if (t > i) {
+                    ptw.set(pt, i);
+                }
+            } else {
+                ptw.set(pt, i );
             }
-            pathsTraveled.push(pt);
+
+
 
             if (nodesToIgnore.includes(ni)) {
                 continue;
@@ -206,7 +214,9 @@
             if (min < shortestPathFound) {
                 shortestPathFound = min;
             }
-            nodesToIgnore.pop();
+            var nti = nodesToIgnore.indexOf(ni);
+            nodesToIgnore.splice(nti,1);
+            // nodesToIgnore.pop();
         }
         return min;
     }
